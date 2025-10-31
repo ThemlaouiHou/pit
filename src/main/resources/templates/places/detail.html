@@ -6,7 +6,7 @@
     <link rel="stylesheet" th:href="@{/css/main.css}">
     <link rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-oE++oI2d0zPCeO5b7MsrfAJZ4w8ZkH7Q2qCifS5prXk="
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossorigin=""/>
 </head>
 <body>
@@ -124,18 +124,43 @@
     © <span th:text="${#temporals.format(T(java.time.Instant).now(), 'yyyy')}">2024</span> Points d'Intérêt Touristiques – Projet Spring Boot.
 </footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-o9N1jRVv0v5kHkYd2XX0rSnb4ypxN1H7tS2RrsPa0L0="
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossorigin=""></script>
 <script th:inline="javascript">
-    const mapLat = [[${place.lat}]];
-    const mapLng = [[${place.lng}]];
-    const map = L.map('place-map', {scrollWheelZoom: false}).setView([mapLat, mapLng], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributeurs'
-    }).addTo(map);
-    L.marker([mapLat, mapLng]).addTo(map)
-        .bindPopup([[${#strings.escapeJavaScript(place.name)}]])
-        .openPopup();
+    document.addEventListener('DOMContentLoaded', () => {
+        const hasCoordinates = [[${place.lat != null && place.lng != null}]];
+        const mapSection = document.querySelector('.map-section');
+        const mapContainer = document.getElementById('place-map');
+        if (!hasCoordinates || !mapSection || !mapContainer) {
+            if (mapSection) {
+                mapSection.style.display = 'none';
+            }
+            return;
+        }
+
+        const rawLat = '[[${place.lat}]]';
+        const rawLng = '[[${place.lng}]]';
+        const mapLat = parseFloat(String(rawLat).replace(',', '.'));
+        const mapLng = parseFloat(String(rawLng).replace(',', '.'));
+
+        if (!Number.isFinite(mapLat) || !Number.isFinite(mapLng)) {
+            mapSection.style.display = 'none';
+            return;
+        }
+
+        mapSection.style.display = '';
+        const map = L.map(mapContainer, {scrollWheelZoom: false}).setView([mapLat, mapLng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributeurs'
+        }).addTo(map);
+
+        const markerTitle = '[[${#strings.escapeJavaScript(place.name)}]]';
+        L.marker([mapLat, mapLng]).addTo(map)
+            .bindPopup(markerTitle || 'Localisation du lieu')
+            .openPopup();
+
+        setTimeout(() => map.invalidateSize(), 250);
+    });
 </script>
 </body>
 </html>

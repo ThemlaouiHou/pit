@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -52,6 +53,7 @@ public class PageController {
     @GetMapping("/places/{id}")
     public String place(@PathVariable Long id,
                         @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(name = "newRating", required = false) String newRating,
                         Model model) {
         Place place;
         try {
@@ -76,14 +78,16 @@ public class PageController {
 
         authService.getCurrentUser().ifPresent(user -> {
             model.addAttribute("currentUser", user);
-            ratingService.findByUserAndPlace(id, user.getId()).ifPresent(existing -> {
-                if (ratingForm.getScore() == null) {
-                    ratingForm.setScore(existing.getScore());
-                }
-                if (ratingForm.getComment() == null || ratingForm.getComment().isBlank()) {
-                    ratingForm.setComment(existing.getComment());
-                }
-            });
+            if (newRating == null) {
+                ratingService.findByUserAndPlace(id, user.getId()).ifPresent(existing -> {
+                    if (ratingForm.getScore() == null) {
+                        ratingForm.setScore(existing.getScore());
+                    }
+                    if (ratingForm.getComment() == null || ratingForm.getComment().isBlank()) {
+                        ratingForm.setComment(existing.getComment());
+                    }
+                });
+            }
         });
 
         model.addAttribute("ratingForm", ratingForm);
@@ -130,6 +134,7 @@ public class PageController {
         try {
             ratingService.rate(id, userId, form.getScore(), form.getComment());
             redirect.addFlashAttribute("success", "Merci pour votre avis !");
+            return "redirect:/places/" + id + "?newRating=1";
         } catch (IllegalStateException ex) {
             redirect.addFlashAttribute("error", "Seuls les lieux publiés peuvent être évalués.");
         } catch (IllegalArgumentException ex) {
