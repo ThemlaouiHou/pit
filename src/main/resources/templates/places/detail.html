@@ -1,0 +1,141 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${place.name} + ' – PIT'">Détail du lieu</title>
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-oE++oI2d0zPCeO5b7MsrfAJZ4w8ZkH7Q2qCifS5prXk="
+          crossorigin=""/>
+</head>
+<body>
+<header class="hero">
+    <div class="container topbar">
+        <a class="logo" th:href="@{/}">PIT</a>
+        <nav>
+            <a th:href="@{/}">Explorer</a>
+            <a th:href="@{/swagger-ui/index.html}">API</a>
+            <span th:if="${currentUser != null}">
+                <a th:if="${currentUser.role.name() == 'ADMIN'}" th:href="@{/admin/places}">Modération</a>
+                <a th:href="@{/logout}">Déconnexion</a>
+            </span>
+            <span th:if="${currentUser == null}">
+                <a th:href="@{/login}">Connexion</a>
+            </span>
+        </nav>
+    </div>
+    <div class="container">
+        <span class="badge" th:text="${place.status}">APPROVED</span>
+        <h1 th:text="${place.name}">Nom du lieu</h1>
+        <p th:text="${place.description != null ? place.description : 'Ce lieu n''a pas encore de description détaillée.'}">
+            Description
+        </p>
+    </div>
+</header>
+
+<main>
+    <div class="container">
+        <div th:if="${success != null}" class="flash flash-success" th:text="${success}"></div>
+        <div th:if="${error != null}" class="flash flash-error" th:text="${error}"></div>
+
+        <section class="metrics">
+            <div class="metric-box">
+                <div class="muted">Note moyenne</div>
+                <div style="font-size: 1.8rem; font-weight: 700;">
+                    <span th:text="${#numbers.formatDecimal(place.avgRating, 1, 1)}">0.0</span> ★
+                </div>
+            </div>
+            <div class="metric-box">
+                <div class="muted">Nombre d'avis</div>
+                <div style="font-size: 1.4rem; font-weight: 700;" th:text="${place.ratingsCount}">0</div>
+            </div>
+            <div class="metric-box">
+                <div class="muted">Coordonnées GPS</div>
+                <div th:text="${place.lat} + ', ' + ${place.lng}">0,0</div>
+            </div>
+        </section>
+
+        <section class="map-section" aria-label="Carte du lieu">
+            <h2>Localisation</h2>
+            <div id="place-map" class="map"></div>
+            <p class="muted" style="margin-top: 8px;">Déplacez-vous ou zoomez pour explorer les alentours.</p>
+        </section>
+
+        <section th:if="${canRate}" style="margin-bottom: 40px;">
+            <h2>Partagez votre avis</h2>
+            <form th:action="@{'/places/' + ${place.id} + '/ratings'}" th:object="${ratingForm}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                <div class="form-grid">
+                    <div>
+                        <label for="score">Votre note</label>
+                        <select id="score" th:field="*{score}">
+                            <option value="" disabled th:selected="${ratingForm.score == null}">Selectionnez</option>
+                            <option th:each="s : ${#numbers.sequence(1,5)}"
+                                    th:value="${s}" th:text="${s} + ' ★'"
+                                    th:selected="${ratingForm.score != null and ratingForm.score == s}">
+                                1 ★
+                            </option>
+                        </select>
+                        <div class="form-error" th:if="${#fields.hasErrors('score')}" th:errors="*{score}"></div>
+                    </div>
+                    <div>
+                        <label for="comment">Commentaire</label>
+                        <textarea id="comment" th:field="*{comment}" placeholder="Partagez vos impressions..."></textarea>
+                        <div class="form-error" th:if="${#fields.hasErrors('comment')}" th:errors="*{comment}"></div>
+                    </div>
+                </div>
+
+                <button type="submit">Enregistrer ma note</button>
+            </form>
+        </section>
+
+        <section th:if="${!canRate}" class="flash flash-error" style="margin-bottom: 40px;">
+            Ce lieu n'est pas encore publié. Seuls les administrateurs ou le propriétaire peuvent le consulter.
+        </section>
+
+        <section>
+            <h2 th:text="${place.ratingsCount > 0 ? 'Avis des voyageurs' : 'Soyez le premier à donner votre avis'}">Avis</h2>
+            <div class="ratings-list" th:if="${ratingsPage.content.size() > 0}">
+                <article class="rating-item" th:each="rating : ${ratingsPage.content}">
+                    <div class="rating-score" th:text="${rating.score} + ' / 5'">5 / 5</div>
+                    <p th:text="${rating.comment != null ? rating.comment : 'Aucun commentaire fourni.'}">Commentaire</p>
+                    <div class="muted">
+                        <span th:text="${rating.user.email}">email</span> ·
+                        <span th:text="${#temporals.format(rating.createdAt, 'dd MMM yyyy HH:mm')}">date</span>
+                    </div>
+                </article>
+            </div>
+            <p class="muted" th:if="${ratingsPage.content.size() == 0}">Aucun avis n'a encore été publié.</p>
+
+            <div class="pagination" th:if="${ratingsPage.totalPages > 1}">
+                <a th:if="${ratingsPage.hasPrevious()}"
+                   th:href="@{/places/{id}(id=${place.id}, page=${ratingsPage.number - 1})}">Précédent</a>
+                <span class="active" th:text="${ratingsPage.number + 1} + ' / ' + ${ratingsPage.totalPages}">1 / 1</span>
+                <a th:if="${ratingsPage.hasNext()}"
+                   th:href="@{/places/{id}(id=${place.id}, page=${ratingsPage.number + 1})}">Suivant</a>
+            </div>
+        </section>
+    </div>
+</main>
+
+<footer>
+    © <span th:text="${#temporals.format(T(java.time.Instant).now(), 'yyyy')}">2024</span> Points d'Intérêt Touristiques – Projet Spring Boot.
+</footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-o9N1jRVv0v5kHkYd2XX0rSnb4ypxN1H7tS2RrsPa0L0="
+        crossorigin=""></script>
+<script th:inline="javascript">
+    const mapLat = [[${place.lat}]];
+    const mapLng = [[${place.lng}]];
+    const map = L.map('place-map', {scrollWheelZoom: false}).setView([mapLat, mapLng], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributeurs'
+    }).addTo(map);
+    L.marker([mapLat, mapLng]).addTo(map)
+        .bindPopup([[${#strings.escapeJavaScript(place.name)}]])
+        .openPopup();
+</script>
+</body>
+</html>

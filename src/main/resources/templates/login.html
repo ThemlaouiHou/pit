@@ -1,0 +1,47 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>PIT – Connexion</title>
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+<header class="hero">
+    <div class="container topbar">
+        <a class="logo" th:href="@{/}">PIT</a>
+        <nav>
+            <a th:href="@{/}">Explorer</a>
+            <a th:href="@{/swagger-ui/index.html}">API</a>
+        </nav>
+    </div>
+    <div class="container">
+        <h1>Connexion à la plateforme</h1>
+        <p>Accédez à vos lieux favoris, déposez de nouvelles découvertes et échangez avec la communauté.</p>
+    </div>
+</header>
+
+<main>
+    <div class="container" style="max-width: 420px;">
+        <section class="card">
+            <form th:action="@{/login}" method="post" style="gap: 20px;">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <div>
+                    <label for="username">Email</label>
+                    <input id="username" name="username" type="text" placeholder="vous@exemple.com" required>
+                </div>
+                <div>
+                    <label for="password">Mot de passe</label>
+                    <input id="password" name="password" type="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit">Se connecter</button>
+                <p class="muted" style="margin: 0;">Pas encore de compte ? <a th:href="@{/register}">Créez-le en ligne</a>.</p>
+            </form>
+        </section>
+    </div>
+</main>
+
+<footer>
+    © <span th:text="${#temporals.format(T(java.time.Instant).now(), 'yyyy')}">2024</span> Points d'Intérêt Touristiques – Projet Spring Boot.
+</footer>
+</body>
+</html>

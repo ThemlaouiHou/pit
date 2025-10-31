@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:pit-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+
+app:
+  jwt:
+    secret: test-secret-0123456789ABCDEF-0123456789ABCDEF
+    expiration-ms: 3600000
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /
+  endpoint:
+    health:
+      probes:
+        enabled: true

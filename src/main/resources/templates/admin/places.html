@@ -1,0 +1,98 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>PIT – Administration</title>
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+<header class="hero">
+    <div class="container topbar">
+        <a class="logo" th:href="@{/}">PIT</a>
+        <nav>
+            <a th:href="@{/admin/places}">Modération</a>
+            <a th:href="@{/}">Retour au site</a>
+            <a th:href="@{/logout}">Déconnexion</a>
+        </nav>
+    </div>
+    <div class="container">
+        <h1>Administration des lieux</h1>
+        <p>Validez les propositions de la communauté et assurez la qualité des contenus publiés.</p>
+    </div>
+</header>
+
+<main>
+    <div class="container">
+        <div th:if="${success != null}" class="flash flash-success" th:text="${success}"></div>
+        <div th:if="${error != null}" class="flash flash-error" th:text="${error}"></div>
+
+        <section>
+            <h2>En attente de validation</h2>
+            <div th:if="${pendingPage.content.size() == 0}" class="muted">Aucun lieu en attente pour le moment.</div>
+            <div class="cards-grid">
+                <article class="card" th:each="place : ${pendingPage.content}">
+                    <div class="meta">
+                        <span th:text="${#temporals.format(place.createdAt, 'dd MMM yyyy HH:mm')}">Date</span>
+                        <span class="badge">À valider</span>
+                    </div>
+                    <h2 th:text="${place.name}">Nom</h2>
+                    <p th:text="${place.description != null ? place.description : 'Pas de description'}"></p>
+                    <div class="meta">
+                        <span th:text="'Lat ' + ${place.lat}">Lat</span>
+                        <span th:text="'Lng ' + ${place.lng}">Lng</span>
+                    </div>
+                    <div class="meta">
+                        <a th:href="@{'/places/' + ${place.id}}">Voir la fiche</a>
+                    </div>
+                    <div class="form-grid">
+                        <form th:action="@{'/admin/places/' + ${place.id} + '/approve'}" method="post">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit">Publier</button>
+                        </form>
+                        <form th:action="@{'/admin/places/' + ${place.id} + '/reject'}" method="post">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit" style="background: #fff; color: var(--danger); border: 1px solid var(--danger);">Refuser</button>
+                        </form>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <div class="pagination" th:if="${pendingPage.totalPages > 1}">
+            <a th:if="${pendingPage.hasPrevious()}"
+               th:href="@{/admin/places(page=${pendingPage.number - 1})}">Précédent</a>
+            <span class="active" th:text="${pendingPage.number + 1} + ' / ' + ${pendingPage.totalPages}">1 / 1</span>
+            <a th:if="${pendingPage.hasNext()}"
+               th:href="@{/admin/places(page=${pendingPage.number + 1})}">Suivant</a>
+        </div>
+
+        <section style="margin-top: 48px;">
+            <h2>Derniers refusés</h2>
+            <div th:if="${rejectedPage.content.size() == 0}" class="muted">Aucun refus récent.</div>
+            <div class="cards-grid">
+                <article class="card" th:each="place : ${rejectedPage.content}">
+                    <div class="meta">
+                        <span th:text="${#temporals.format(place.createdAt, 'dd MMM yyyy HH:mm')}">Date</span>
+                        <span class="badge" style="background: rgba(214,69,69,0.12); color: var(--danger);">Rejeté</span>
+                    </div>
+                    <h2 th:text="${place.name}">Nom</h2>
+                    <p th:text="${place.description != null ? place.description : 'Pas de description'}"></p>
+                    <div class="meta">
+                        <span th:text="'Lat ' + ${place.lat}">Lat</span>
+                        <span th:text="'Lng ' + ${place.lng}">Lng</span>
+                    </div>
+                    <form th:action="@{'/admin/places/' + ${place.id} + '/approve'}" method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit">Publier quand même</button>
+                    </form>
+                </article>
+            </div>
+        </section>
+    </div>
+</main>
+
+<footer>
+    © <span th:text="${#temporals.format(T(java.time.Instant).now(), 'yyyy')}">2024</span> Points d'Intérêt Touristiques – Administration.
+</footer>
+</body>
+</html>
