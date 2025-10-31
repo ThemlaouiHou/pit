@@ -1,4 +1,3 @@
-// CreatePlaceRequest.java
 package com.pit.web.dto;
 import jakarta.validation.constraints.*;
 public record CreatePlaceRequest(@NotBlank String name,

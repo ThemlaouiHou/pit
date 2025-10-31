@@ -15,7 +15,7 @@ public class Rating {
     private Long id;
     @ManyToOne(optional=false) private Place place;
     @ManyToOne(optional=false) private User user;
-    @Column(nullable=false) private int score; // 1..5
+    @Column(nullable=false) private int score; // Stored in the 1..5 range.
     @Column(columnDefinition="text") private String comment;
     @CreationTimestamp private Instant createdAt;
 }

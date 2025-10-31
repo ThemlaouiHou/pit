@@ -1,8 +1,8 @@
 app:
   jwt:
-    # Génère un secret base64 (256 bits) une fois, p.ex. via `openssl rand -base64 32`
+    # Generate a base64 secret (256 bits), e.g., via `openssl rand -base64 32`.
     secret: "yQ3rRr2h4qf2Yl9y0P0b3bK8vQ6Q3y7r2c7mZ2b0s9d1m4n5o6p7q8r9s0t1u2v3"
-    expiration-ms: 86400000  # 24h
+    expiration-ms: 86400000  # 24 hours
 
 spring:
   datasource:

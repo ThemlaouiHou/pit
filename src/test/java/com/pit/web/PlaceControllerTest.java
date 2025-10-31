@@ -7,6 +7,7 @@ import com.pit.domain.User;
 import com.pit.repository.PlaceRepository;
 import com.pit.repository.UserRepository;
 import com.pit.service.RatingService;
+import com.pit.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,8 +23,12 @@ import java.util.Locale;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.*;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -34,6 +39,8 @@ class PlaceControllerTest {
     @Autowired PlaceRepository placeRepository;
     @Autowired UserRepository userRepository;
     @Autowired RatingService ratingService;
+    @MockBean AuthService authService;
+    @Autowired ObjectMapper objectMapper;
 
     User author;
 
@@ -54,6 +61,10 @@ class PlaceControllerTest {
         admin.setPassword("pwd");
         admin.setRole(Role.ADMIN);
         userRepository.save(admin);
+
+        reset(authService);
+        when(authService.isCurrentUserAdmin()).thenReturn(false);
+        when(authService.getCurrentUserId()).thenReturn(null);
     }
 
     @Test
@@ -70,6 +81,8 @@ class PlaceControllerTest {
 
     @Test
     void nonAdminCannotRequestPendingList() throws Exception {
+        when(authService.isCurrentUserAdmin()).thenReturn(false);
+
         mvc.perform(get("/api/places").param("status", "PENDING"))
                 .andExpect(status().isForbidden());
     }
@@ -78,6 +91,7 @@ class PlaceControllerTest {
     @WithMockUser(username = "admin@test.local", roles = {"ADMIN"})
     void adminCanQueryPendingPlaces() throws Exception {
         Place pending = savePlace("Oasis", PlaceStatus.PENDING);
+        when(authService.isCurrentUserAdmin()).thenReturn(true);
 
         mvc.perform(get("/api/places").param("status", "PENDING"))
                 .andExpect(status().isOk())
@@ -89,6 +103,8 @@ class PlaceControllerTest {
     @Test
     void pendingDetailHiddenFromPublic() throws Exception {
         Place pending = savePlace("Cascade", PlaceStatus.PENDING);
+        when(authService.getCurrentUserId()).thenReturn(null);
+        when(authService.isCurrentUserAdmin()).thenReturn(false);
 
         mvc.perform(get("/api/places/{id}", pending.getId()))
                 .andExpect(status().isNotFound());
@@ -98,6 +114,8 @@ class PlaceControllerTest {
     @WithMockUser(username = "user@test.local", roles = {"USER"})
     void ownerCanSeePendingDetail() throws Exception {
         Place pending = savePlace("Cascade", PlaceStatus.PENDING);
+        when(authService.getCurrentUserId()).thenReturn(author.getId());
+        when(authService.isCurrentUserAdmin()).thenReturn(false);
 
         mvc.perform(get("/api/places/{id}", pending.getId()))
                 .andExpect(status().isOk())
@@ -108,6 +126,8 @@ class PlaceControllerTest {
     void ratingsEndpointReturnsDataForApprovedPlace() throws Exception {
         Place approved = savePlace("Kasbah", PlaceStatus.APPROVED);
         ratingService.rate(approved.getId(), author.getId(), 4, "Très beau site");
+        when(authService.isCurrentUserAdmin()).thenReturn(false);
+        when(authService.getCurrentUserId()).thenReturn(null);
 
         mvc.perform(get("/api/places/{id}/ratings", approved.getId()))
                 .andExpect(status().isOk())
@@ -118,6 +138,41 @@ class PlaceControllerTest {
         assertThat(reloaded.getAvgRating()).isEqualTo(4.0);
         assertThat(reloaded.getRatingsCount()).isEqualTo(1);
     }
+
+    @Test
+    @WithMockUser(username = "user@test.local", roles = {"USER"})
+    void userCanCreatePlaceWhenAuthenticated() throws Exception {
+        when(authService.getCurrentUserId()).thenReturn(author.getId());
+        when(authService.isCurrentUserAdmin()).thenReturn(false);
+
+        var payload = objectMapper.writeValueAsString(
+                new CreatePlacePayload("Tour Hassan", "Monument historique", 34.0223, -6.8356)
+        );
+
+        mvc.perform(post("/api/places")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Tour Hassan"))
+                .andExpect(jsonPath("$.status").value("PENDING"));
+
+        assertThat(placeRepository.findAll())
+                .anyMatch(p -> "Tour Hassan".equals(p.getName()) && p.getCreatedBy().getId().equals(author.getId()));
+    }
+
+    @Test
+    void unauthenticatedUserCannotCreatePlace() throws Exception {
+        var payload = objectMapper.writeValueAsString(
+                new CreatePlacePayload("Zagora", "Désert", 29.711, -7.952)
+        );
+
+        mvc.perform(post("/api/places")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isForbidden());
+    }
+
+    record CreatePlacePayload(String name, String description, double lat, double lng) {}
 
     private Place savePlace(String name, PlaceStatus status) {
         Place place = new Place();

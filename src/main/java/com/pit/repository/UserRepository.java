@@ -1,4 +1,3 @@
-// UserRepository.java
 package com.pit.repository;
 import com.pit.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;

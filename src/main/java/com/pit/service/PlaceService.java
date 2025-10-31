@@ -18,7 +18,9 @@ public interface PlaceService {
 
     Place create(String name, String description, double lat, double lng, Long userId);
 
-    // pratique si tu veux réutiliser la Request plus tard
+    /**
+     * Convenience overload that reuses the record-based request payload.
+     */
     default Place create(CreatePlaceRequest req, Long userId) {
         return create(req.name(), req.description(), req.lat(), req.lng(), userId);
     }

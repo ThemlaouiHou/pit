@@ -1,4 +1,3 @@
-// PlaceRepository.java
 package com.pit.repository;
 import com.pit.domain.Place;
 import com.pit.domain.PlaceStatus;

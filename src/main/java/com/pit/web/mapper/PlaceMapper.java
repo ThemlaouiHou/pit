@@ -1,4 +1,3 @@
-// PlaceMapper.java
 package com.pit.web.mapper;
 import com.pit.domain.Place;
 import com.pit.web.dto.PlaceDto;

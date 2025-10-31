@@ -47,7 +47,7 @@ public class PlaceServiceImpl implements PlaceService {
     @Override
     @Transactional
     public Place create(String name, String description, double lat, double lng, Long userId) {
-        // createdBy est un User → on charge l’entité
+        // Load the author entity so the relationship is managed.
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
 

@@ -143,7 +143,7 @@ public class PageController {
 
     @GetMapping("/login")
     public String login() {
-        return "login";  // src/main/resources/templates/login.html
+        return "login";
     }
 
     private boolean canView(Place place) {

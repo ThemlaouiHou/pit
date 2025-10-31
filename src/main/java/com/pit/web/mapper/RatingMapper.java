@@ -1,4 +1,3 @@
-// RatingMapper.java
 package com.pit.web.mapper;
 import com.pit.domain.Rating;
 import com.pit.web.dto.RatingDto;

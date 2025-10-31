@@ -1,4 +1,3 @@
-// src/test/java/com/pit/web/HealthControllerTest.java
 package com.pit.web;
 
 import org.junit.jupiter.api.Test;

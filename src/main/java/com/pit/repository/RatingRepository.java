@@ -1,4 +1,3 @@
-// RatingRepository.java
 package com.pit.repository;
 import com.pit.domain.Rating;
 import org.springframework.data.domain.Page;

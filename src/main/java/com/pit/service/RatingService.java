@@ -1,4 +1,3 @@
-// RatingService.java
 package com.pit.service;
 import com.pit.domain.Rating;
 import org.springframework.data.domain.Page;

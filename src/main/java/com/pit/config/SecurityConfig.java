@@ -34,7 +34,7 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
-    /* Chaîne 0 : pages HTML (Thymeleaf) */
+    /** Security filter chain serving Thymeleaf pages with form login. */
     @Bean
     @Order(0)
     public SecurityFilterChain pagesChain(HttpSecurity http) throws Exception {
@@ -61,13 +61,13 @@ public class SecurityConfig {
                         .logoutSuccessUrl("/login?logout")
                         .permitAll()
                 )
-                // IMPORTANT: sessions activées pour le formLogin
+                // Session management remains enabled to support form login flows.
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 
         return http.build();
     }
 
-    /* Chaîne 1 : API (JWT) */
+    /** Security filter chain protecting stateless API endpoints with JWT. */
     @Bean
     @Order(1)
     public SecurityFilterChain apiChain(HttpSecurity http) throws Exception {

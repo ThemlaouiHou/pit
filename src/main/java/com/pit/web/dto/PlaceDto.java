@@ -1,4 +1,3 @@
-// PlaceDto.java
 package com.pit.web.dto;
 
 import java.time.Instant;

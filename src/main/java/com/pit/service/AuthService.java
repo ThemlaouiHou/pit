@@ -66,7 +66,7 @@ public class AuthService {
                 .orElse(false);
     }
 
-    /** Récupère l’ID DB de l’utilisateur courant via son email. */
+    /** Returns the database identifier of the current user if present. */
     public Long getCurrentUserId() {
         return getCurrentUser().map(User::getId).orElse(null);
     }
