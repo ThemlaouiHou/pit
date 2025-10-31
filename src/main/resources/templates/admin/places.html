@@ -36,7 +36,9 @@
                         <span class="badge">À valider</span>
                     </div>
                     <h2 th:text="${place.name}">Nom</h2>
-                    <p th:text="${place.description != null ? place.description : 'Pas de description'}"></p>
+                    <p class="card-description"
+                       th:attr="title=${place.description}"
+                       th:text="${place.description != null ? place.description : 'Pas de description'}"></p>
                     <div class="meta">
                         <span th:text="'Lat ' + ${place.lat}">Lat</span>
                         <span th:text="'Lng ' + ${place.lng}">Lng</span>
@@ -76,7 +78,9 @@
                         <span class="badge" style="background: rgba(214,69,69,0.12); color: var(--danger);">Rejeté</span>
                     </div>
                     <h2 th:text="${place.name}">Nom</h2>
-                    <p th:text="${place.description != null ? place.description : 'Pas de description'}"></p>
+                    <p class="card-description"
+                       th:attr="title=${place.description}"
+                       th:text="${place.description != null ? place.description : 'Pas de description'}"></p>
                     <div class="meta">
                         <span th:text="'Lat ' + ${place.lat}">Lat</span>
                         <span th:text="'Lng ' + ${place.lng}">Lng</span>
