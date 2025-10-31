@@ -27,6 +27,7 @@
         <div th:if="${error != null}" class="flash flash-error" th:text="${error}"></div>
 
         <section>
+            <br>
             <h2>En attente de validation</h2>
             <div th:if="${pendingPage.content.size() == 0}" class="muted">Aucun lieu en attente pour le moment.</div>
             <div class="cards-grid">
