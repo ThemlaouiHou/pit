@@ -22,6 +22,7 @@ import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -170,6 +171,18 @@ class PlaceControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "admin@test.local", roles = {"ADMIN"})
+    void adminCanDeletePlaceViaApi() throws Exception {
+        Place pending = savePlace("Ruines", PlaceStatus.PENDING);
+        when(authService.isCurrentUserAdmin()).thenReturn(true);
+
+        mvc.perform(delete("/api/places/{id}", pending.getId()))
+                .andExpect(status().isNoContent());
+
+        assertThat(placeRepository.findById(pending.getId())).isEmpty();
     }
 
     record CreatePlacePayload(String name, String description, double lat, double lng) {}

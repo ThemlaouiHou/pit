@@ -27,4 +27,5 @@ public interface PlaceService {
 
     Place approve(Long id);
     Place reject(Long id);
+    void delete(Long id);
 }

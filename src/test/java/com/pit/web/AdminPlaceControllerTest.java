@@ -16,9 +16,12 @@ import com.pit.service.PlaceService;
 
 import java.util.Collections;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -53,5 +56,14 @@ class AdminPlaceControllerTest {
 
         mvc.perform(get("/admin/places"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminCanDeletePlace() throws Exception {
+        mvc.perform(post("/admin/places/{id}/delete", 42).with(csrf()))
+                .andExpect(status().is3xxRedirection());
+
+        verify(placeService).delete(42L);
     }
 }

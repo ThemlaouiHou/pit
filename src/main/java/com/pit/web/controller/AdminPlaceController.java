@@ -60,4 +60,15 @@ public class AdminPlaceController {
         }
         return "redirect:/admin/places";
     }
+
+    @PostMapping("/{id}/delete")
+    public String delete(@PathVariable Long id, RedirectAttributes redirect) {
+        try {
+            placeService.delete(id);
+            redirect.addFlashAttribute("success", "Lieu supprimé définitivement.");
+        } catch (IllegalArgumentException ex) {
+            redirect.addFlashAttribute("error", "Lieu introuvable.");
+        }
+        return "redirect:/admin/places";
+    }
 }

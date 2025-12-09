@@ -83,4 +83,11 @@ public class PlaceServiceImpl implements PlaceService {
         p.setStatus(PlaceStatus.REJECTED);
         return placeRepository.save(p);
     }
+
+    @Override
+    @Transactional
+    public void delete(Long id) {
+        Place p = findById(id);
+        placeRepository.delete(p);
+    }
 }

@@ -56,6 +56,11 @@
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                             <button type="submit" style="background: #fff; color: var(--danger); border: 1px solid var(--danger);">Refuser</button>
                         </form>
+                        <form th:action="@{'/admin/places/' + ${place.id} + '/delete'}" method="post"
+                              onsubmit="return confirm('Supprimer définitivement ce lieu ?');">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit" style="background: #fff; color: #555; border: 1px dashed #999;">Supprimer</button>
+                        </form>
                     </div>
                 </article>
             </div>
@@ -89,6 +94,11 @@
                     <form th:action="@{'/admin/places/' + ${place.id} + '/approve'}" method="post">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                         <button type="submit">Publier quand même</button>
+                    </form>
+                    <form th:action="@{'/admin/places/' + ${place.id} + '/delete'}" method="post"
+                          onsubmit="return confirm('Supprimer définitivement ce lieu ?');">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit" style="background: #fff; color: #555; border: 1px dashed #999;">Supprimer</button>
                     </form>
                 </article>
             </div>

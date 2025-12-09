@@ -64,6 +64,8 @@ public class PageController {
         }
         model.addAttribute("place", place);
         model.addAttribute("canRate", place.getStatus() == PlaceStatus.APPROVED);
+        boolean isAdmin = authService.isCurrentUserAdmin();
+        model.addAttribute("canDelete", isAdmin);
 
         int pageIndex = Math.max(page, 0);
         PageRequest pageable = PageRequest.of(pageIndex, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
