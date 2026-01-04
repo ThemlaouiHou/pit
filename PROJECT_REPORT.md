@@ -27,6 +27,7 @@ L’ensemble s’appuie sur PostgreSQL en production (profil `prod`) et H2 en m�
 - **Documentation des API :** Springdoc fournit la documentation interactive. Chaque route REST est annotée (`@Tag`) pour apparaître clairement dans Swagger.
 - **Structure claire et injection de dépendances :** la hiérarchie de packages répond aux responsabilités métier, et l’injection via `@RequiredArgsConstructor` supprime la configuration manuelle.
 - **Base de données relationnelle et opérations CRUD :** `PlaceServiceImpl` et `RatingServiceImpl` encapsulent les opérations insert/update/read. Les statuts `PENDING/APPROVED/REJECTED` implémentent le workflow de validation.
+- **Suppression administrative des lieux :** un administrateur peut supprimer définitivement un lieu via l’API REST (`DELETE /api/places/{id}`) ou depuis l’interface d’administration.
 - **Pagination :** toutes les listes exposées (`/`, `/admin/places`, `/api/places`, `/api/places/{id}/ratings`) sont paginées. Les tests vérifient notamment que la liste publique exclut les lieux en attente.
 - **Gestion utilisateurs (public/admin) :** la séparation des rôles est gérée via Spring Security (`@PreAuthorize`, restrictions dans `SecurityConfig`). Les vues affichent dynamiquement les menus en fonction du rôle.
 - **Tests unitaires / d’intégration sur le périmètre public :** la couverture des contrôleurs REST et HTML (voir section 5) garantit que les comportements attendus sur les endpoints accessibles au public sont validés.
@@ -59,6 +60,68 @@ Nous avons privilégié des tests d’intégration ciblés avec MockMvc pour vé
 
 L’intégralité de la suite s’exécute avec `mvn test`. Les tests reposent sur H2 en mode PostgreSQL pour refléter les contraintes SQL (notamment l’unicité `uk_rating_user_place`). Un dernier run (`mvn test` exécuté après corrections) confirme que tous les tests passent. Nous disposons ainsi d’une couverture exhaustive sur les points sensibles mentionnés dans le cahier des charges (endpoints publics, flux de soumission, modération, notation).
 
+### 5.1 Tests manuels (CLI)
+Les tests manuels ont été reproduits en ligne de commande (voir `CLI.txt`). Ci-dessous, les commandes utilisées telles qu’exécutées :
+
+```
+1. Inscrire ou connecter un utilisateur :
+
+     curl -s -X POST http://localhost:8080/api/auth/register \
+       -H 'Content-Type: application/json' \
+       -d '{"email":"user@test.local","password":"Secret123"}'
+     Garder le token renvoyé (sinon utiliser api/auth/login).
+     Garder le token renvoyé (sinon utiliser api/auth/login).
+  2. Soumettre un lieu avec ce token :
+
+     curl -s -X POST http://localhost:8080/api/places \
+       -H "Authorization: Bearer $USER_TOKEN" \
+       -H 'Content-Type: application/json' \
+       -d '{"name":"Tour Hassan","description":"Monument","lat":34.0223,"lng":-6.8356}'
+
+     
+  3. Approuver le lieu en tant qu’admin par défaut :
+
+       ADMIN_TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"email":"admin@pit.local","password":"admin"}' | jq -r '.token')
+
+     curl -X POST http://localhost:8080/api/places/$PLACE_ID:approve \
+       -H "Authorization: Bearer $ADMIN_TOKEN"
+     curl 'http://localhost:8080/api/places?page=0&size=9'
+  5. Ecrire et relire une note :
+
+     curl -s -X POST http://localhost:8080/api/places/$PLACE_ID/ratings \
+       -H "Authorization: Bearer $USER_TOKEN" \
+       -H 'Content-Type: application/json' \
+       -d '{"score":4,"comment":"Super spot"}'
+
+  6. Token admin + suppression d'un lieu :
+
+     ADMIN_TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"email":"admin@pit.local","password":"admin"}' | jq -r '.token')
+
+     curl -X DELETE http://localhost:8080/api/places/1 \
+    -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+### 5.2 Vérification des permissions (suppression interdite côté utilisateur standard)
+Lorsqu’un utilisateur non admin tente de supprimer un lieu via l’API, le serveur renvoie `403 Forbidden`. Exemple constaté :
+
+```
+houssem@Wissir:/mnt/c/Users/houss/Desktop/cours/3emeannee/jee_spring/Projet/pit$ curl -s -X POST http://localhost:8080/api/auth/register          -H "Content-Type: application/json"          -d '{"email":"user@test.local","password":"Secret123"}'
+{"token":"eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiUk9MRV9VU0VSIiwic3ViIjoidXNlckB0ZXN0LmxvY2FsIiwiaWF0IjoxNzY3NDg0Nzc0LCJleHAiOjE3Njc0ODgzNzR9.U9a5-e2z3AQYwLsGGrzpj6aqE1O1UTSC1MWit9bwfyc"}               houssem@Wissir:/mnt/c/Users/houss/Desktop/courshoussem@Wissir:/mnt/c/Users/houss/Desktop/cours/3emeannee/jee_spring/Projet/pit$  curl -s -X POST http://localhost:8080/api/places \
+       -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiUk9MRV9VU0VSIiwic3ViIjoidXNlckB0ZXN0LmxvY2FsIiwiaWF0IjoxNzY3NDg0Nzc0LCJleHAiOjE3Njc0ODgzNzR9.U9a5-e2z3AQYwLsGGrzpj6aqE1O1UTSC1MWit9bwfyc" \
+       -H 'Content-Type: application/json' \
+       -d '{"name":"Tour Hassan","description":"Monument","lat":34.0223,"lng
+":-6.8356}'
+{"id":1,"name":"Tour Hassan","description":"Monument","lat":34.0223,"lng":-6.8356,"status":"PENDING","avgRating":0.0,"ratingsCount":0,"createdAt":"2026-01-04T00:41:00.302481Z"}houssem@Wissir:/mnt/c/Users/houss/Desktop/cours/3emeannee/jee_spring/Projet/pit$ curl -X DELETE http://localhost:8080/api/places/$PLAcurl -X DELETE http://localhost:8080/api/places/1 \
+    -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiUk9MRV9VU0VSI
+iwic3ViIjoidXNlckB0ZXN0LmxvY2FsIiwiaWF0IjoxNzY3NDg0Nzc0LCJleHAiOjE3Njc0ODgzN
+zR9.U9a5-e2z3AQYwLsGGrzpj6aqE1O1UTSC1MWit9bwfyc"
+{"timestamp":"2026-01-04T00:45:45.889+00:00","status":403,"error":"Forbidden","path":"/api/places/1"}
+```
+
 ## 6. Bilan et perspectives d’évolution
 ### 6.1 Bilan
 Le produit respecte l’ensemble des contraintes fixées : interface riche permettant l’inscription et la soumission, API REST documentée, workflow administrateur pour la validation, calcul en temps réel des moyennes, pagination sur tous les flux. L’usage de Spring (Security, Data JPA, Validation) est maximisé, et les tests automatisés donnent confiance dans les comportements critiques.
@@ -74,7 +137,7 @@ Le produit respecte l’ensemble des contraintes fixées : interface riche perme
 1. **Prérequis** : JDK 21 (par exemple `C:\Soft\java\jdk`), Maven 3.8+, Docker Desktop si l’on souhaite tester avec PostgreSQL. Vérifier la version avec `java --version` et `mvn -v`.
 2. **Variables d’environnement** : sur Windows/WSL, exporter `JAVA_HOME=/mnt/c/Soft/java/jdk` puis ajouter `PATH="$JAVA_HOME/bin:$PATH"`. Ce point élimine l’erreur « JAVA_HOME is not defined correctly ».
 3. **Cloner et installer** : `git clone ...`, puis depuis la racine du projet `mvn clean install`. Cette commande compile, lance les tests et exécute les migrations Flyway sur l’H2 embarquée.
-4. **Lancer en mode développement** : `mvn spring-boot:run -Dspring-boot.run.profiles=dev`. Le profil `dev` active l’H2 en mémoire, le rechargement Thymeleaf et la console `/h2`.
+4. **Lancer en mode développement** : `mvn spring-boot:run -Dspring-boot.run.profiles=dev`. Le profil `dev` active l’H2 en mémoire, le rechargement Thymeleaf et la console `/h2-console`.
 5. **Base PostgreSQL optionnelle** : `cd docker && docker compose up -d`. Les variables de connexion sont préconfigurées dans `application-prod.yml` (à compléter selon l’environnement).
 6. **Accéder à l’application** : http://localhost:8080 pour l’UI. Créer un compte via « Inscription » (aucune intervention API n’est nécessaire). Un administrateur par défaut (`admin@pit.local` / mot de passe `admin`) est disponible pour la modération. La documentation API est sur http://localhost:8080/swagger-ui/index.html.
 7. **Exécuter les tests** : `mvn test`. Pour les pipelines CI, préférer `mvn clean verify`. Les tests reposent sur Mockito pour stubber `AuthService`, et s’exécutent sans dépendance externe.
