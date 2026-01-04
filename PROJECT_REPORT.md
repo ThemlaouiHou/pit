@@ -11,16 +11,20 @@ Pour répondre à la double cible API / interface utilisateur, deux familles de 
 
 La pagination est gérée partout avec les objets `Pageable` et `PageRequest` (ex. `PageController.home` pour les lieux publics et `AdminPlaceController.dashboard` pour les files d’attente). Les coordonnées GPS sont manipulées dans toute la stack en doubles (6 décimales), validées côté DTO (`CreatePlaceRequest`) et côté formulaires (contraintes Bean Validation).
 
+### 1.2.1 API REST (modèle, style et usage)
+L’API est une API REST JSON exposée sous `/api/**`. Elle suit un style ressource (ex. `/api/places`, `/api/places/{id}`, `/api/places/{id}/ratings`) et retourne des DTO dédiés (`PlaceDto`, `RatingDto`) pour isoler le modèle JPA du modèle d’échange. Les statuts HTTP sont utilisés pour refléter les règles métiers (ex. 401/403 pour accès interdit, 404 pour ressource introuvable, 409 pour conflit sur la notation). L’API est versionnée implicitement via le contexte applicatif (pas de `/v1`), ce qui reste conforme au périmètre du projet. Les vues sont réalisées en Thymeleaf (pas de JSP), ce qui assure une séparation claire entre UI serveur et API REST.
+
 ### 1.3 Sécurité et gestion des utilisateurs
 `SecurityConfig` définit deux chaînes de filtres indépendantes : une pour les pages HTML avec session et formulaire de connexion, une pour l’API REST stateless sécurisée par JWT (`JwtAuthFilter`, `JwtService`). Cette configuration permet à un visiteur de créer un compte via `/register`, de s’authentifier via `/login` (formulaire) et de générer des tokens via `/api/auth/**`. Les rôles `USER` et `ADMIN` sont portés par l’entité `User`, alimentés par Flyway (`V2__seed_admin.sql` pour l’admin par défaut).
 
 `AuthService` centralise l’encodage bcrypt des mots de passe, l’authentification et la récupération de l’utilisateur courant. Cela simplifie l’autorisation fine appliquée par `PlaceController` et `RatingController` (visibilité restreinte pour les lieux en attente, notation réservée aux comptes authentifiés).
 
 ### 1.4 Persistance et base de données
-L’ensemble s’appuie sur PostgreSQL en production (profil `prod`) et H2 en mémoire pour le développement et les tests (`application.yml` + `application-dev.yml`). Les migrations Flyway (`db/migration/V1__init_schema.sql` à `V4__place_created_at.sql`) créent les tables `users`, `places`, `ratings`, ajoutent les colonnes de métriques et horodatages. Chaque insertion de note déclenche `RatingServiceImpl.refreshPlaceMetrics` qui met à jour la moyenne et le compteur associés au lieu, garantissant une lecture instantanée côté UI.
+L’ensemble s’appuie sur une base relationnelle H2 en mémoire pour le développement et les tests (`application.yml` + `application-dev.yml`). Les migrations Flyway (`db/migration/V1__init_schema.sql` à `V4__place_created_at.sql`) créent les tables `users`, `places`, `ratings`, ajoutent les colonnes de métriques et horodatages. Chaque insertion de note déclenche `RatingServiceImpl.refreshPlaceMetrics` qui met à jour la moyenne et le compteur associés au lieu, garantissant une lecture instantanée côté UI.
 
 ### 1.5 Documentation et observabilité
-`OpenApiConfig` publie la documentation Swagger sur `/swagger-ui/index.html`. Les endpoints d’activité (`/health`, `/actuator/health`) sont exposés pour l’intégration continue et l’observabilité. Le logging SQL est activé dans les profils par défaut pour faciliter le diagnostic en développement.
+`OpenApiConfig` publie la documentation Swagger sur `/swagger-ui/index.html`. Swagger UI sert à explorer l’API (liste des endpoints, modèles, paramètres), tester les routes directement depuis le navigateur, et vérifier rapidement les statuts de réponse sans écrire de scripts. C’est utile pour la validation fonctionnelle (démonstrations, recettes) et pour partager une documentation interactive aux évaluateurs.
+Les endpoints d’activité (`/health`, `/actuator/health`) sont exposés pour l’intégration continue et l’observabilité. Le logging SQL est activé dans les profils par défaut pour faciliter le diagnostic en développement.
 
 ## 2. Réalisation du cahier des charges
 - **Application Spring Web / API REST :** l’API REST couvre l’intégralité du CRUD utile : soumission, récupération détaillée, modération, notation. Les contrôleurs HTML offrent l’expérience utilisateur demandée (création de compte, soumission, vote).
@@ -50,15 +54,19 @@ L’ensemble s’appuie sur PostgreSQL en production (profil `prod`) et H2 en m�
 Les glissements se concentrent sur la sécurité et les tests, compensés par une anticipation sur la documentation (livrée plus tôt que prévu).
 
 ## 5. Stratégie de tests et validation
-Nous avons privilégié des tests d’intégration ciblés avec MockMvc pour vérifier le comportement « public » exigé.
+Nous avons combiné tests unitaires (services) et tests d’intégration MockMvc (API/UI) afin de couvrir la logique métier et les endpoints publics exigés.
 
-- **`src/test/java/com/pit/web/PlaceControllerTest.java`** explore toute la matrice d’accès : filtrage des lieux approuvés, accès interdit aux listes `PENDING` pour les utilisateurs standard, visibilité d’un lieu en attente par son auteur, exposition des notes agrégées, création de lieu authentifiée. Le service `AuthService` y est mocké via `@MockBean`, utilisant Mockito pour simuler l’identité et le rôle courant.
-- **`src/test/java/com/pit/web/RatingControllerTest.java`** vérifie la notation : un utilisateur authentifié peut poster une note, l’appel échoue sur un lieu en attente (409 Conflict), les anonymes ne voient pas les notes des lieux non publiés, et l’absence d’utilisateur en session renvoie 401. Là encore, Mockito permet d’injecter `AuthService`.
-- **`src/test/java/com/pit/web/AdminPlaceControllerTest.java`** couvre la sécurisation de l’interface admin : redirection vers `/login` pour les anonymes, 403 pour un simple utilisateur, 200 pour un admin (avec pagination mockée).
-- **`src/test/java/com/pit/web/PageControllerTest.java`** et **`PageControllerDefaultProfileTest.java`** assurent que la page d’accueil se charge sous le profil `test` comme sous le profil par défaut.
-- **`src/test/java/com/pit/web/HealthControllerTest.java`** valide `/health`, utile pour les probes Kubernetes.
+- **`src/test/java/com/pit/service/AuthServiceTest.java`** vérifie l’encodage des mots de passe, la création d’un compte (email unique) et la génération de JWT à l’inscription/connexion.
+- **`src/test/java/com/pit/service/PlaceServiceImplTest.java`** valide la création d’un lieu (statut `PENDING`, auteur), la gestion des erreurs (utilisateur introuvable), la validation des transitions (`approve`) et la suppression.
+- **`src/test/java/com/pit/service/RatingServiceImplTest.java`** couvre les règles de notation (score 1..5, refus si lieu non approuvé) et le recalcul des métriques.
+- **`src/test/java/com/pit/web/AuthControllerTest.java`** teste les routes publiques `/api/auth/register` et `/api/auth/login`, y compris les validations d’email/mot de passe.
+- **`src/test/java/com/pit/web/PlaceControllerTest.java`** explore la matrice d’accès REST : filtrage des lieux approuvés, accès interdit aux listes `PENDING` pour les non-admins, visibilité d’un lieu en attente par son auteur, pagination, validation des coordonnées, suppression interdite pour un utilisateur standard, et suppression autorisée pour un admin.
+- **`src/test/java/com/pit/web/RatingControllerTest.java`** vérifie la notation via l’API REST (authentifié vs anonyme), le comportement 409 sur lieux non publiés et les validations sur le score.
+- **`src/test/java/com/pit/web/AdminPlaceControllerTest.java`** couvre la sécurisation de l’interface admin (redirection login, 403 pour user, accès admin) et l’action de suppression via la vue.
+- **`src/test/java/com/pit/web/PageControllerTest.java`** et **`PageControllerDefaultProfileTest.java`** assurent que la page d’accueil se charge sous les profils `test` et `default`.
+- **`src/test/java/com/pit/web/HealthControllerTest.java`** valide `/health`, utile pour les probes d’environnement.
 
-L’intégralité de la suite s’exécute avec `mvn test`. Les tests reposent sur H2 en mode PostgreSQL pour refléter les contraintes SQL (notamment l’unicité `uk_rating_user_place`). Un dernier run (`mvn test` exécuté après corrections) confirme que tous les tests passent. Nous disposons ainsi d’une couverture exhaustive sur les points sensibles mentionnés dans le cahier des charges (endpoints publics, flux de soumission, modération, notation).
+L’intégralité de la suite s’exécute avec `mvn test`. Les tests reposent sur H2 en mode PostgreSQL pour refléter les contraintes SQL (notamment l’unicité `uk_rating_user_place`). Un run complet confirme que tous les tests passent et couvre les points sensibles du cahier des charges (API publique, modération, notation, pagination, sécurité).
 
 ### 5.1 Tests manuels (CLI)
 Les tests manuels ont été reproduits en ligne de commande (voir `CLI.txt`). Ci-dessous, les commandes utilisées telles qu’exécutées :
@@ -134,13 +142,12 @@ Le produit respecte l’ensemble des contraintes fixées : interface riche perme
 5. **Accessibilité et internationalisation** : traductions et support RTL pour élargir la base utilisateur.
 
 ## 7. Guide d’installation et de configuration
-1. **Prérequis** : JDK 21 (par exemple `C:\Soft\java\jdk`), Maven 3.8+, Docker Desktop si l’on souhaite tester avec PostgreSQL. Vérifier la version avec `java --version` et `mvn -v`.
+1. **Prérequis** : JDK 21 (par exemple `C:\Soft\java\jdk`), Maven 3.8+. Vérifier la version avec `java --version` et `mvn -v`.
 2. **Variables d’environnement** : sur Windows/WSL, exporter `JAVA_HOME=/mnt/c/Soft/java/jdk` puis ajouter `PATH="$JAVA_HOME/bin:$PATH"`. Ce point élimine l’erreur « JAVA_HOME is not defined correctly ».
 3. **Cloner et installer** : `git clone ...`, puis depuis la racine du projet `mvn clean install`. Cette commande compile, lance les tests et exécute les migrations Flyway sur l’H2 embarquée.
 4. **Lancer en mode développement** : `mvn spring-boot:run -Dspring-boot.run.profiles=dev`. Le profil `dev` active l’H2 en mémoire, le rechargement Thymeleaf et la console `/h2-console`.
-5. **Base PostgreSQL optionnelle** : `cd docker && docker compose up -d`. Les variables de connexion sont préconfigurées dans `application-prod.yml` (à compléter selon l’environnement).
-6. **Accéder à l’application** : http://localhost:8080 pour l’UI. Créer un compte via « Inscription » (aucune intervention API n’est nécessaire). Un administrateur par défaut (`admin@pit.local` / mot de passe `admin`) est disponible pour la modération. La documentation API est sur http://localhost:8080/swagger-ui/index.html.
-7. **Exécuter les tests** : `mvn test`. Pour les pipelines CI, préférer `mvn clean verify`. Les tests reposent sur Mockito pour stubber `AuthService`, et s’exécutent sans dépendance externe.
-8. **Variables JWT** : en production, remplacer `app.jwt.secret` par un secret 256 bits généré (`openssl rand -base64 32`) et ajuster `app.jwt.expiration-ms`.
+5. **Accéder à l’application** : http://localhost:8080 pour l’UI. Créer un compte via « Inscription » (aucune intervention API n’est nécessaire). Un administrateur par défaut (`admin@pit.local` / mot de passe `admin`) est disponible pour la modération. La documentation API est sur http://localhost:8080/swagger-ui/index.html.
+6. **Exécuter les tests** : `mvn test`. Pour les pipelines CI, préférer `mvn clean verify`. Les tests reposent sur Mockito pour stubber `AuthService`, et s’exécutent sans dépendance externe.
+7. **Variables JWT** : remplacer `app.jwt.secret` par un secret 256 bits généré (`openssl rand -base64 32`) et ajuster `app.jwt.expiration-ms`.
 
 Ce guide couvre l’installation, la configuration et l’exécution des tests. Avec ces instructions, le projet peut être déployé ou évalué en moins de cinq minutes, tout en respectant les exigences de sécurité et de qualité fixées initialement.

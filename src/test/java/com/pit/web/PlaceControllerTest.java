@@ -141,6 +141,19 @@ class PlaceControllerTest {
     }
 
     @Test
+    void paginationRespectsPageSize() throws Exception {
+        savePlace("A", PlaceStatus.APPROVED);
+        savePlace("B", PlaceStatus.APPROVED);
+
+        mvc.perform(get("/api/places")
+                        .param("page", "0")
+                        .param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
     @WithMockUser(username = "user@test.local", roles = {"USER"})
     void userCanCreatePlaceWhenAuthenticated() throws Exception {
         when(authService.getCurrentUserId()).thenReturn(author.getId());
@@ -162,6 +175,22 @@ class PlaceControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user@test.local", roles = {"USER"})
+    void createPlaceRejectsInvalidLatitude() throws Exception {
+        when(authService.getCurrentUserId()).thenReturn(author.getId());
+        when(authService.isCurrentUserAdmin()).thenReturn(false);
+
+        var payload = objectMapper.writeValueAsString(
+                new CreatePlacePayload("Invalid", "Bad lat", 120.0, -6.0)
+        );
+
+        mvc.perform(post("/api/places")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void unauthenticatedUserCannotCreatePlace() throws Exception {
         var payload = objectMapper.writeValueAsString(
                 new CreatePlacePayload("Zagora", "Désert", 29.711, -7.952)
@@ -170,6 +199,15 @@ class PlaceControllerTest {
         mvc.perform(post("/api/places")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "user@test.local", roles = {"USER"})
+    void nonAdminCannotDeletePlaceViaApi() throws Exception {
+        Place pending = savePlace("Interdit", PlaceStatus.PENDING);
+
+        mvc.perform(delete("/api/places/{id}", pending.getId()))
                 .andExpect(status().isForbidden());
     }
 

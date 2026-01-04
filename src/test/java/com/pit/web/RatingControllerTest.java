@@ -128,5 +128,18 @@ class RatingControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    @WithMockUser(username = "member@test.local", roles = {"USER"})
+    void invalidScoreReturnsBadRequest() throws Exception {
+        when(authService.getCurrentUserId()).thenReturn(user.getId());
+
+        var payload = objectMapper.writeValueAsString(new RatingPayload(6, "Too high"));
+
+        mvc.perform(post("/api/places/{id}/ratings", approvedPlace.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest());
+    }
+
     record RatingPayload(int score, String comment) {}
 }

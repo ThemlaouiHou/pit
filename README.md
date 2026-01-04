@@ -4,7 +4,6 @@
 ## Prérequis
 - JDK 21 (OpenJDK)
 - Maven 3.9+
-- (Prod) Docker pour Postgres
 
 
 ## Démarrage rapide
