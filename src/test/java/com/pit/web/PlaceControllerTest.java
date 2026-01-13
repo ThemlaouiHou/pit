@@ -6,7 +6,6 @@ import com.pit.domain.Role;
 import com.pit.domain.User;
 import com.pit.repository.PlaceRepository;
 import com.pit.repository.UserRepository;
-import com.pit.service.RatingService;
 import com.pit.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,6 @@ class PlaceControllerTest {
     @Autowired MockMvc mvc;
     @Autowired PlaceRepository placeRepository;
     @Autowired UserRepository userRepository;
-    @Autowired RatingService ratingService;
     @MockBean AuthService authService;
     @Autowired ObjectMapper objectMapper;
 
@@ -121,23 +119,6 @@ class PlaceControllerTest {
         mvc.perform(get("/api/places/{id}", pending.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PENDING"));
-    }
-
-    @Test
-    void ratingsEndpointReturnsDataForApprovedPlace() throws Exception {
-        Place approved = savePlace("Kasbah", PlaceStatus.APPROVED);
-        ratingService.rate(approved.getId(), author.getId(), 4, "Très beau site");
-        when(authService.isCurrentUserAdmin()).thenReturn(false);
-        when(authService.getCurrentUserId()).thenReturn(null);
-
-        mvc.perform(get("/api/places/{id}/ratings", approved.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(1)))
-                .andExpect(jsonPath("$.content[0].score").value(4));
-
-        Place reloaded = placeRepository.findById(approved.getId()).orElseThrow();
-        assertThat(reloaded.getAvgRating()).isEqualTo(4.0);
-        assertThat(reloaded.getRatingsCount()).isEqualTo(1);
     }
 
     @Test

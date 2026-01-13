@@ -54,16 +54,21 @@ Les endpoints d’activité (`/health`, `/actuator/health`) sont exposés pour l
 Les glissements se concentrent sur la sécurité et les tests, compensés par une anticipation sur la documentation (livrée plus tôt que prévu).
 
 ## 5. Stratégie de tests et validation
-Nous avons combiné tests unitaires (services) et tests d’intégration MockMvc (API/UI) afin de couvrir la logique métier et les endpoints publics exigés.
+Nous avons combiné tests unitaires (services + contrôleurs via `@WebMvcTest`) et tests d’intégration MockMvc (API/UI via `@SpringBootTest`) afin de couvrir la logique métier et les endpoints publics exigés.
 
 - **`src/test/java/com/pit/service/AuthServiceTest.java`** vérifie l’encodage des mots de passe, la création d’un compte (email unique) et la génération de JWT à l’inscription/connexion.
 - **`src/test/java/com/pit/service/PlaceServiceImplTest.java`** valide la création d’un lieu (statut `PENDING`, auteur), la gestion des erreurs (utilisateur introuvable), la validation des transitions (`approve`) et la suppression.
 - **`src/test/java/com/pit/service/RatingServiceImplTest.java`** couvre les règles de notation (score 1..5, refus si lieu non approuvé) et le recalcul des métriques.
-- **`src/test/java/com/pit/web/AuthControllerTest.java`** teste les routes publiques `/api/auth/register` et `/api/auth/login`, y compris les validations d’email/mot de passe.
+- **`src/test/java/com/pit/web/AuthControllerTest.java`** teste les routes publiques `/api/auth/register` et `/api/auth/login`, y compris les validations d’email/mot de passe (test unitaire WebMvcTest).
 - **`src/test/java/com/pit/web/PlaceControllerTest.java`** explore la matrice d’accès REST : filtrage des lieux approuvés, accès interdit aux listes `PENDING` pour les non-admins, visibilité d’un lieu en attente par son auteur, pagination, validation des coordonnées, suppression interdite pour un utilisateur standard, et suppression autorisée pour un admin.
 - **`src/test/java/com/pit/web/RatingControllerTest.java`** vérifie la notation via l’API REST (authentifié vs anonyme), le comportement 409 sur lieux non publiés et les validations sur le score.
 - **`src/test/java/com/pit/web/AdminPlaceControllerTest.java`** couvre la sécurisation de l’interface admin (redirection login, 403 pour user, accès admin) et l’action de suppression via la vue.
-- **`src/test/java/com/pit/web/PageControllerTest.java`** et **`PageControllerDefaultProfileTest.java`** assurent que la page d’accueil se charge sous les profils `test` et `default`.
+- **`src/test/java/com/pit/web/PageControllerTest.java`** couvre la page d’accueil, la page login et le détail d’un lieu approuvé (test unitaire WebMvcTest).
+- **`src/test/java/com/pit/web/PlaceControllerWebMvcTest.java`** valide les statuts de liste (paramètre `status` invalide, accès `ALL`, liste approuvée) côté API publique.
+- **`src/test/java/com/pit/web/RatingControllerWebMvcTest.java`** valide la consultation des notes pour un lieu approuvé et le 404 sur lieu inexistant.
+- **`src/test/java/com/pit/web/AuthPageControllerWebMvcTest.java`** vérifie l’accès à la page d’inscription (test unitaire WebMvcTest).
+- **`src/test/java/com/pit/security/JwtServiceTest.java`** vérifie la génération de JWT (claims, expiration) et l’extraction d’identité.
+- **`src/test/java/com/pit/security/JwtAuthFilterTest.java`** vérifie le filtrage JWT (absence de header, token invalide, authentification réussie).
 - **`src/test/java/com/pit/web/HealthControllerTest.java`** valide `/health`, utile pour les probes d’environnement.
 
 L’intégralité de la suite s’exécute avec `mvn test`. Les tests reposent sur H2 en mode PostgreSQL pour refléter les contraintes SQL (notamment l’unicité `uk_rating_user_place`). Un run complet confirme que tous les tests passent et couvre les points sensibles du cahier des charges (API publique, modération, notation, pagination, sécurité).

@@ -52,7 +52,7 @@
             </div>
             <div class="metric-box">
                 <div class="muted">Coordonnées GPS</div>
-                <div th:text="${place.lat} + ', ' + ${place.lng}">0,0</div>
+                <div th:text="|${place.lat}, ${place.lng}|">0,0</div>
             </div>
         </section>
 
