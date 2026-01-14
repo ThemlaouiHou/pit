@@ -6,9 +6,11 @@ import com.pit.domain.User;
 import com.pit.repository.PlaceRepository;
 import com.pit.repository.UserRepository;
 import com.pit.service.PlaceService;
+import com.pit.web.dto.PlaceNotificationDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,7 @@ public class PlaceServiceImpl implements PlaceService {
 
     private final PlaceRepository placeRepository;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     public Place findById(Long id) {
@@ -59,7 +62,9 @@ public class PlaceServiceImpl implements PlaceService {
         p.setCreatedBy(author);
         p.setStatus(PlaceStatus.PENDING);
 
-        return placeRepository.save(p);
+        Place saved = placeRepository.save(p);
+        notifyAdminsOfNewPlace(saved);
+        return saved;
     }
 
     @Override
@@ -70,7 +75,9 @@ public class PlaceServiceImpl implements PlaceService {
             return p;
         }
         p.setStatus(PlaceStatus.APPROVED);
-        return placeRepository.save(p);
+        Place saved = placeRepository.save(p);
+        notifyCreator(saved, "APPROVED", "Votre lieu est en ligne.");
+        return saved;
     }
 
     @Override
@@ -81,7 +88,9 @@ public class PlaceServiceImpl implements PlaceService {
             return p;
         }
         p.setStatus(PlaceStatus.REJECTED);
-        return placeRepository.save(p);
+        Place saved = placeRepository.save(p);
+        notifyCreator(saved, "REJECTED", "Votre lieu a été refusé.");
+        return saved;
     }
 
     @Override
@@ -89,5 +98,22 @@ public class PlaceServiceImpl implements PlaceService {
     public void delete(Long id) {
         Place p = findById(id);
         placeRepository.delete(p);
+    }
+
+    private void notifyCreator(Place place, String status, String message) {
+        if (place.getCreatedBy() == null || place.getCreatedBy().getEmail() == null) {
+            return;
+        }
+        PlaceNotificationDto dto = new PlaceNotificationDto(place.getId(), status, message);
+        messagingTemplate.convertAndSendToUser(place.getCreatedBy().getEmail(), "/queue/places", dto);
+    }
+
+    private void notifyAdminsOfNewPlace(Place place) {
+        String author = place.getCreatedBy() != null && place.getCreatedBy().getEmail() != null
+                ? place.getCreatedBy().getEmail()
+                : "un utilisateur";
+        PlaceNotificationDto dto = new PlaceNotificationDto(place.getId(), "PENDING",
+                "Nouvelle proposition par " + author + ".");
+        messagingTemplate.convertAndSend("/topic/admin/places", dto);
     }
 }

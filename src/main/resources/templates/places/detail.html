@@ -9,7 +9,8 @@
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossorigin=""/>
 </head>
-<body>
+<body th:attr="data-admin=${currentUser != null and currentUser.role.name() == 'ADMIN'}">
+<div id="ws-notifications" class="ws-notifications" aria-live="polite"></div>
 <header class="hero">
     <div class="container topbar">
         <a class="logo" th:href="@{/}">PIT</a>
@@ -133,6 +134,9 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script th:src="@{/js/ws-notifications.js}"></script>
 <script th:inline="javascript">
     document.addEventListener('DOMContentLoaded', () => {
         const hasCoordinates = [[${place.lat != null && place.lng != null}]];

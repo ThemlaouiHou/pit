@@ -9,4 +9,4 @@
 ## Démarrage rapide
 ```bash
 mvn clean install
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
+mvn spring-boot:run 

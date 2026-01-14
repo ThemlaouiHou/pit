@@ -7,11 +7,13 @@ import com.pit.domain.User;
 import com.pit.repository.PlaceRepository;
 import com.pit.repository.UserRepository;
 import com.pit.service.impl.PlaceServiceImpl;
+import com.pit.web.dto.PlaceNotificationDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.Optional;
 
@@ -24,6 +26,7 @@ class PlaceServiceImplTest {
 
     @Mock PlaceRepository placeRepository;
     @Mock UserRepository userRepository;
+    @Mock SimpMessagingTemplate messagingTemplate;
     @InjectMocks PlaceServiceImpl service;
 
     @Test
@@ -40,6 +43,7 @@ class PlaceServiceImplTest {
         assertThat(created.getStatus()).isEqualTo(PlaceStatus.PENDING);
         assertThat(created.getCreatedBy()).isEqualTo(author);
         assertThat(created.getName()).isEqualTo("Test");
+        verify(messagingTemplate).convertAndSend(eq("/topic/admin/places"), any(PlaceNotificationDto.class));
     }
 
     @Test
@@ -56,6 +60,9 @@ class PlaceServiceImplTest {
         Place place = new Place();
         place.setId(1L);
         place.setStatus(PlaceStatus.PENDING);
+        User author = new User();
+        author.setEmail("user@test.local");
+        place.setCreatedBy(author);
 
         when(placeRepository.findById(1L)).thenReturn(Optional.of(place));
         when(placeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -64,6 +71,8 @@ class PlaceServiceImplTest {
 
         assertThat(updated.getStatus()).isEqualTo(PlaceStatus.APPROVED);
         verify(placeRepository).save(place);
+        verify(messagingTemplate).convertAndSendToUser(eq("user@test.local"), eq("/queue/places"),
+                any(PlaceNotificationDto.class));
     }
 
     @Test
@@ -78,6 +87,26 @@ class PlaceServiceImplTest {
 
         assertThat(updated.getStatus()).isEqualTo(PlaceStatus.APPROVED);
         verify(placeRepository, never()).save(any());
+        verifyNoInteractions(messagingTemplate);
+    }
+
+    @Test
+    void rejectNotifiesCreator() {
+        Place place = new Place();
+        place.setId(1L);
+        place.setStatus(PlaceStatus.PENDING);
+        User author = new User();
+        author.setEmail("user@test.local");
+        place.setCreatedBy(author);
+
+        when(placeRepository.findById(1L)).thenReturn(Optional.of(place));
+        when(placeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Place updated = service.reject(1L);
+
+        assertThat(updated.getStatus()).isEqualTo(PlaceStatus.REJECTED);
+        verify(messagingTemplate).convertAndSendToUser(eq("user@test.local"), eq("/queue/places"),
+                any(PlaceNotificationDto.class));
     }
 
     @Test

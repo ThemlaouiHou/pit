@@ -39,12 +39,12 @@ public class SecurityConfig {
     @Order(0)
     public SecurityFilterChain pagesChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/", "/places/**", "/admin/**", "/login", "/register", "/logout", "/h2-console/**", "/css/**", "/js/**", "/images/**")
+                .securityMatcher("/", "/places/**", "/admin/**", "/login", "/register", "/logout", "/h2-console/**", "/css/**", "/js/**", "/images/**", "/ws/**")
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/login", "/register", "/h2-console/**", "/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/", "/login", "/register", "/h2-console/**", "/css/**", "/js/**", "/images/**", "/ws/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/places/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/places/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/register").permitAll()

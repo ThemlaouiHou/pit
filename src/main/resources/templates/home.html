@@ -5,7 +5,8 @@
     <title>PIT – Explorer</title>
     <link rel="stylesheet" th:href="@{/css/main.css}">
 </head>
-<body>
+<body th:attr="data-admin=${currentUser != null and currentUser.role.name() == 'ADMIN'}">
+<div id="ws-notifications" class="ws-notifications" aria-live="polite"></div>
 <header class="hero">
     <div class="container topbar">
         <a class="logo" th:href="@{/}">PIT</a>
@@ -111,5 +112,8 @@
 <footer>
     © <span th:text="${#temporals.format(T(java.time.Instant).now(), 'yyyy')}">2024</span> Points d'Intérêt Touristiques – Projet Spring Boot.
 </footer>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script th:src="@{/js/ws-notifications.js}"></script>
 </body>
 </html>
