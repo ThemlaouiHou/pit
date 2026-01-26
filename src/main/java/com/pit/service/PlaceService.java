@@ -6,6 +6,7 @@ import com.pit.web.dto.CreatePlaceRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+// Application component.
 public interface PlaceService {
 
     Page<Place> findAll(Pageable pageable);

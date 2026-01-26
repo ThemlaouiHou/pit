@@ -10,6 +10,7 @@ import lombok.Getter; import lombok.Setter; import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "ratings",
         uniqueConstraints = @UniqueConstraint(name="uk_rating_user_place", columnNames = {"user_id","place_id"}))
+// Application component.
 public class Rating {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

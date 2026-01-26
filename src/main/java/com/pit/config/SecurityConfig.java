@@ -22,6 +22,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import org.springframework.http.HttpMethod;
 
+// Security configuration for UI and API chains.
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
@@ -37,6 +38,7 @@ public class SecurityConfig {
     /** Security filter chain serving Thymeleaf pages with form login. */
     @Bean
     @Order(0)
+    // Handles pages chain request operation
     public SecurityFilterChain pagesChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/", "/places/**", "/admin/**", "/login", "/register", "/logout", "/h2-console/**", "/css/**", "/js/**", "/images/**", "/ws/**")
@@ -70,6 +72,7 @@ public class SecurityConfig {
     /** Security filter chain protecting stateless API endpoints with JWT. */
     @Bean
     @Order(1)
+    // Handles api chain request operation
     public SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/api/**", "/actuator/**")
@@ -92,6 +95,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    // Handles authentication provider request operation
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider p = new DaoAuthenticationProvider();
         p.setUserDetailsService(userDetailsService);
@@ -100,16 +104,19 @@ public class SecurityConfig {
     }
 
     @Bean
+    // Handles password encoder request operation
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
+    // Handles authentication manager request operation
     public AuthenticationManager authenticationManager(AuthenticationConfiguration cfg) throws Exception {
         return cfg.getAuthenticationManager();
     }
 
     @Bean
+    // Handles form login success handler request operation
     public AuthenticationSuccessHandler formLoginSuccessHandler() {
         return (request, response, authentication) -> {
             boolean isAdmin = authentication.getAuthorities().stream()

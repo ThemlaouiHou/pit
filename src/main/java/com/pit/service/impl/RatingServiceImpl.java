@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+// Rating service implementation.
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -25,6 +26,7 @@ public class RatingServiceImpl implements RatingService {
     private final UserRepository userRepo;
 
     @Override
+    // Handles rate request operation
     public Rating rate(Long placeId, Long userId, int score, String comment) {
         if (score < 1 || score > 5) {
             throw new IllegalArgumentException("score must be between 1 and 5");
@@ -55,12 +57,14 @@ public class RatingServiceImpl implements RatingService {
 
     @Override
     @Transactional(readOnly = true)
+    // Handles find by place request operation
     public Page<Rating> findByPlace(Long placeId, Pageable pageable) {
         return ratingRepo.findByPlaceId(placeId, pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
+    // Handles find by user and place request operation
     public Optional<Rating> findByUserAndPlace(Long placeId, Long userId) {
         return ratingRepo.findByUserIdAndPlaceId(userId, placeId);
     }

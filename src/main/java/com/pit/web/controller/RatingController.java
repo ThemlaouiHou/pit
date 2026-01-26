@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+// REST endpoints for ratings.
 @Tag(name = "rating-controller")
 @RestController
 @RequestMapping("/api/places/{placeId}/ratings")
@@ -30,6 +31,7 @@ public class RatingController {
     private final RatingMapper ratingMapper;
 
     @GetMapping
+    // Handles list request operation
     public ResponseEntity<Page<RatingDto>> list(@PathVariable Long placeId,
                                                 @ParameterObject Pageable pageable) {
         var permission = ensurePlaceVisible(placeId);
@@ -42,6 +44,7 @@ public class RatingController {
     }
 
     @GetMapping("/me")
+    // Handles my rating request operation
     public ResponseEntity<RatingDto> myRating(@PathVariable Long placeId) {
         Long userId = authService.getCurrentUserId();
         if (userId == null) {
@@ -57,6 +60,7 @@ public class RatingController {
     }
 
     @PostMapping
+    // Handles rate request operation
     public ResponseEntity<RatingDto> rate(@PathVariable Long placeId,
                                           @Valid @RequestBody RatingRequest request) {
         Long userId = authService.getCurrentUserId();

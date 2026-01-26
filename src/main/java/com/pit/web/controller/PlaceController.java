@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 
+// REST endpoints for places.
 @Tag(name = "place-controller")
 @RestController
 @RequestMapping("/api/places")
@@ -31,6 +32,7 @@ public class PlaceController {
     private final AuthService authService;
 
     @GetMapping
+    // Handles list request operation
     public ResponseEntity<Page<PlaceDto>> list(@ParameterObject Pageable pageable,
                                                @RequestParam(defaultValue = "APPROVED") String status) {
         boolean isAdmin = authService.isCurrentUserAdmin();
@@ -55,6 +57,7 @@ public class PlaceController {
     }
 
     @GetMapping("/{id}")
+    // Handles get request operation
     public ResponseEntity<PlaceDto> get(@PathVariable Long id) {
         Place place;
         try {
@@ -75,6 +78,7 @@ public class PlaceController {
     }
 
     @PostMapping
+    // Handles create request operation
     public ResponseEntity<PlaceDto> create(@Valid @RequestBody CreatePlaceRequest req) {
         Long userId = authService.getCurrentUserId();
         if (userId == null) return ResponseEntity.status(401).build();
@@ -84,6 +88,7 @@ public class PlaceController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}:approve")
+    // Handles approve request operation
     public ResponseEntity<Void> approve(@PathVariable Long id) {
         try {
             placeService.approve(id);
@@ -95,6 +100,7 @@ public class PlaceController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}:reject")
+    // Handles reject request operation
     public ResponseEntity<Void> reject(@PathVariable Long id) {
         try {
             placeService.reject(id);
@@ -106,6 +112,7 @@ public class PlaceController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
+    // Handles delete request operation
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         try {
             placeService.delete(id);

@@ -5,6 +5,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 
+// Application component.
 @Mapper(componentModel = "spring")
 public interface RatingMapper {
     @Mapping(target="placeId", source="place.id")

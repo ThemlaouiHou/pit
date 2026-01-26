@@ -8,6 +8,7 @@ import java.time.Instant;
 
 import lombok.Getter; import lombok.Setter; import lombok.NoArgsConstructor;
 
+// Application component.
 @Getter @Setter @NoArgsConstructor
 @Entity @Table(name = "users")
 public class User {

@@ -5,6 +5,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 
+// Application component.
 @Mapper(componentModel = "spring")
 public interface PlaceMapper {
     @Mapping(target="status", expression = "java(place.getStatus().name())")

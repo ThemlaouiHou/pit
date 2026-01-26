@@ -16,6 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+// UI endpoints for registration/login.
 @Controller
 @RequiredArgsConstructor
 public class AuthPageController {
@@ -23,6 +24,7 @@ public class AuthPageController {
     private final AuthService authService;
 
     @GetMapping("/register")
+    // Handles register request operation
     public String register(Model model) {
         if (!model.containsAttribute("registrationForm")) {
             model.addAttribute("registrationForm", new RegistrationForm());
@@ -31,6 +33,7 @@ public class AuthPageController {
     }
 
     @PostMapping("/register")
+    // Handles handle register request operation
     public String handleRegister(@Valid @ModelAttribute("registrationForm") RegistrationForm form,
                                  BindingResult binding,
                                  RedirectAttributes redirect,

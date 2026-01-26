@@ -14,6 +14,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// Place service implementation.
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -24,17 +25,20 @@ public class PlaceServiceImpl implements PlaceService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Override
+    // Handles find by id request operation
     public Place findById(Long id) {
         return placeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Place not found: " + id));
     }
 
     @Override
+    // Handles find all request operation
     public Page<Place> findAll(Pageable pageable) {
         return placeRepository.findAll(pageable);
     }
 
     @Override
+    // Handles find by status request operation
     public Page<Place> findByStatus(PlaceStatus status, Pageable pageable) {
         if (status == null) {
             return findAll(pageable);
@@ -43,12 +47,14 @@ public class PlaceServiceImpl implements PlaceService {
     }
 
     @Override
+    // Handles find approved request operation
     public Page<Place> findApproved(Pageable pageable) {
         return placeRepository.findByStatus(PlaceStatus.APPROVED, pageable);
     }
 
     @Override
     @Transactional
+    // Handles create request operation
     public Place create(String name, String description, double lat, double lng, Long userId) {
         // Load the author entity so the relationship is managed.
         User author = userRepository.findById(userId)
@@ -69,6 +75,7 @@ public class PlaceServiceImpl implements PlaceService {
 
     @Override
     @Transactional
+    // Handles approve request operation
     public Place approve(Long id) {
         Place p = findById(id);
         if (p.getStatus() == PlaceStatus.APPROVED) {
@@ -82,6 +89,7 @@ public class PlaceServiceImpl implements PlaceService {
 
     @Override
     @Transactional
+    // Handles reject request operation
     public Place reject(Long id) {
         Place p = findById(id);
         if (p.getStatus() == PlaceStatus.REJECTED) {
@@ -95,6 +103,7 @@ public class PlaceServiceImpl implements PlaceService {
 
     @Override
     @Transactional
+    // Handles delete request operation
     public void delete(Long id) {
         Place p = findById(id);
         placeRepository.delete(p);

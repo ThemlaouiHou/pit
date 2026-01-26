@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.function.Function;
 
+// JWT helper for token creation and validation.
 @Service
 public class JwtService {
 
@@ -30,10 +31,12 @@ public class JwtService {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
+    // Handles extract username request operation
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
+    // Handles extract claim request operation
     public <T> T extractClaim(String token, Function<Claims, T> extractor) {
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(signingKey())
@@ -43,6 +46,7 @@ public class JwtService {
         return extractor.apply(claims);
     }
 
+    // Handles generate token request operation
     public String generateToken(UserDetails user) {
         return generateToken(Map.of(
                 "role", user.getAuthorities().stream()
@@ -50,6 +54,7 @@ public class JwtService {
         ), user);
     }
 
+    // Handles generate token request operation
     public String generateToken(Map<String, Object> extraClaims, UserDetails user) {
         long now = System.currentTimeMillis();
         return Jwts.builder()
@@ -61,6 +66,7 @@ public class JwtService {
                 .compact();
     }
 
+    // Handles is token valid request operation
     public boolean isTokenValid(String token, UserDetails user) {
         String username = extractUsername(token);
         return username.equals(user.getUsername()) && !isExpired(token);

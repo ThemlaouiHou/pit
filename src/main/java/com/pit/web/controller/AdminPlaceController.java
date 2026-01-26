@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+// Admin UI endpoints for moderation.
 @Controller
 @RequestMapping("/admin/places")
 @RequiredArgsConstructor
@@ -27,6 +28,7 @@ public class AdminPlaceController {
     private final PlaceService placeService;
 
     @GetMapping
+    // Handles dashboard request operation
     public String dashboard(@RequestParam(defaultValue = "0") @Min(0) int page,
                             Model model) {
         PageRequest pageable = PageRequest.of(Math.max(page, 0), 10,
@@ -40,6 +42,7 @@ public class AdminPlaceController {
     }
 
     @PostMapping("/{id}/approve")
+    // Handles approve request operation
     public String approve(@PathVariable Long id, RedirectAttributes redirect) {
         try {
             placeService.approve(id);
@@ -51,6 +54,7 @@ public class AdminPlaceController {
     }
 
     @PostMapping("/{id}/reject")
+    // Handles reject request operation
     public String reject(@PathVariable Long id, RedirectAttributes redirect) {
         try {
             placeService.reject(id);
@@ -62,6 +66,7 @@ public class AdminPlaceController {
     }
 
     @PostMapping("/{id}/delete")
+    // Handles delete request operation
     public String delete(@PathVariable Long id, RedirectAttributes redirect) {
         try {
             placeService.delete(id);

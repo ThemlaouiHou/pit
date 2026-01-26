@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+// Application component.
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
@@ -16,6 +17,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final UserRepository users;
 
     @Override
+    // Handles load user by username request operation
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User u = users.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));

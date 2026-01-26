@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+// Public UI endpoints.
 @Controller
 @RequiredArgsConstructor
 public class PageController {
@@ -34,6 +35,7 @@ public class PageController {
     private final AuthService authService;
 
     @GetMapping("/")
+    // Handles home request operation
     public String home(@RequestParam(defaultValue = "0") int page,
                        Model model) {
         int pageIndex = Math.max(page, 0);
@@ -49,6 +51,7 @@ public class PageController {
     }
 
     @GetMapping("/places/{id}")
+    // Handles place request operation
     public String place(@PathVariable Long id,
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(name = "newRating", required = false) String newRating,
@@ -96,6 +99,7 @@ public class PageController {
 
     @PostMapping("/places")
     @PreAuthorize("isAuthenticated()")
+    // Handles submit place request operation
     public String submitPlace(@Valid @ModelAttribute("placeForm") PlaceForm form,
                               BindingResult binding,
                               RedirectAttributes redirect) {
@@ -117,6 +121,7 @@ public class PageController {
 
     @PostMapping("/places/{id}/ratings")
     @PreAuthorize("isAuthenticated()")
+    // Handles submit rating request operation
     public String submitRating(@PathVariable Long id,
                                @Valid @ModelAttribute("ratingForm") RatingForm form,
                                BindingResult binding,
@@ -144,6 +149,7 @@ public class PageController {
     }
 
     @GetMapping("/login")
+    // Handles login request operation
     public String login() {
         return "login";
     }
